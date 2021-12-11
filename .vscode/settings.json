@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "xadc_core.h": "c"
+    }
+}

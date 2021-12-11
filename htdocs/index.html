@@ -1,0 +1,479 @@
+<!-- 
+	CSS来源：https://blog.csdn.net/qq604598861/article/details/52567003?spm=1001.2101.3001.6650.2&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7Edefault-2.opensearchhbase&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7Edefault-2.opensearchhbase
+ -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Xlinweb</title>
+
+	<style>
+		.button {
+			background-color: #4CAF50;
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+	</style>
+
+	<style type="text/css">
+		* {
+			margin: 0;
+			padding: 0;
+			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		}
+
+		.slide-btn {
+			width: 100px;
+			display: inline-block;
+			border: 1px solid;
+			border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+			border-radius: 5px;
+			position: relative;
+			overflow: hidden;
+			cursor: pointer;
+		}
+
+		.slide-btn .inner-on,
+		.slide-btn .inner-off {
+			width: 151px;
+			box-sizing: border-box;
+			display: inline-block;
+			position: relative;
+			left: 0;
+			cursor: pointer;
+			transition: left 0.5s;
+		}
+
+		.inner-on .left,
+		.inner-off .left {
+			width: 50px;
+			color: #fff;
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			background: #58b058;
+			text-align: center;
+			display: inline-block;
+			padding: 4px 0;
+		}
+
+		.inner-on .space,
+		.inner-off .space {
+			width: 51px;
+			display: inline-block;
+			box-sizing: border-box;
+			padding: 4px 0;
+			color: #fff;
+			background-color: #f5f5f5;
+			border-left: 1px solid #cccccc;
+			border-right: 1px solid #cccccc;
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+			border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		}
+
+		.inner-on .right,
+		.inner-off .right {
+			width: 50px;
+			color: #fff;
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			background: #f9a123;
+			text-align: center;
+			display: inline-block;
+			padding: 4px 0;
+		}
+	</style>
+</head>
+
+
+<body style="padding-top:50px;padding-left:50px;">
+	<h2>LED控制：</h2>
+	<h3>PS LED State：</h3>
+	<div class="slide-btn">
+		<div class="inner-on" id="ps_led">
+			<input style="display:none;" type="checkbox" checked>
+			<span class="left">ON</span><span class="space">&nbsp;</span><span class="right">OFF</span>
+		</div>
+	</div>
+
+	<h3>PL LED State：</h3>
+	<div class="slide-btn">
+		<div class="inner-on" id="pl_led">
+			<input style="display:none;" type="checkbox" checked>
+			<span class="left">ON</span><span class="space">&nbsp;</span><span class="right">OFF</span>
+		</div>
+	</div>
+
+	<h2>按键状态检测：</h2>
+	<!-- <button class="button" type="submit" id="btn_detect" onclick="detect();"> 检测 </button> -->
+	<!-- 下面这个onclick是真的奇怪。。。。 -->
+	<!-- <button type="submit" id="btn_detect" οnclick="alert('这是一个事件测试')"> 检测 </button>   -->
+	<!-- <h2>检测按键：</h2>
+	 <button type="submit" id="btn_submit" onclick="alert('这是一个事件测试')"> submit </button> -->
+
+	<h3>PS KEY State：</h3>
+	<div class="slide-btn">
+		<div class="inner-on" id="ps_key">
+			<input style="display:none;" type="checkbox" checked>
+			<span class="left">ON</span><span class="space">&nbsp;</span><span class="right">OFF</span>
+		</div>
+	</div>
+
+	<h3>PL KEY State：</h3>
+	<div class="slide-btn">
+		<div class="inner-on" id="pl_key">
+			<input style="display:none;" type="checkbox" checked>
+			<span class="left">ON</span><span class="space">&nbsp;</span><span class="right">OFF</span>
+		</div>
+	</div>
+
+
+	<h2>PWM控制：</h2>
+	<select id="pwmlist" onchange="choose_duty();">
+		<option value="0">-- duty --</option>
+		<option value="20">20</option>
+		<option value="40">40</option>
+		<option value="60">60</option>
+		<option value="80">80</option>
+		<option value="99">100</option>
+	</select>
+
+	<h2>XADC数据采集：</h2>
+	<p>当前片内温度: <b><span id="temperature"></span><span>℃</span></b></p>
+	<p>in_voltage2_vcc: <b><span id="vcc"></span><span>mv</span></b></p>
+	<!-- <p>电压曲线:</p> -->
+	<div id="container" style="width: 550px; height: 400px; margin: 0 auto"></div>
+
+
+	<script>
+		function choose_duty() {
+			var pwmList = document.getElementById("pwmlist");
+			var duty = pwmList.options[pwmList.selectedIndex].value;
+			// console.log("duty:",duty);
+			post_duty(duty);
+		}
+
+
+		function post_duty(duty) {
+			var xmlhttp;
+			if (window.XMLHttpRequest) {
+				//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+				xmlhttp = new XMLHttpRequest();
+			}
+			else {
+				// IE6, IE5 浏览器执行代码
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function () {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+				}
+			}
+
+			xmlhttp.open("POST", "/pwm.cgi", true);
+
+			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xmlhttp.send(duty);
+			xmlhttp.send();
+		}
+
+
+	</script>
+
+
+	<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script src="http://code.highcharts.com/highcharts.js"></script>
+	<script language="JavaScript">
+		$(document).ready(function () {
+			var chart = {
+				type: 'spline',
+				animation: Highcharts.svg, // don't animate in IE < IE 10.
+				marginRight: 10,
+				events: {
+					load: function () {
+						// set up the updating of the chart each second
+						var series = this.series[0];
+						setInterval(function () {
+							var x = (new Date()).getTime(); // current time
+							var temp = document.getElementById("vcc").innerHTML;
+							var y = parseInt(temp);
+							//  console.log(y);
+							series.addPoint([x, y], true, true);
+						}, 2000);
+					}
+				}
+			};
+			var title = {
+				text: '电压曲线'
+			};
+			var xAxis = {
+				type: 'datetime',
+				tickPixelInterval: 150
+			};
+			var yAxis = {
+				title: {
+					text: '电压值（mv）'
+				},
+				plotLines: [{
+					value: 0,
+					width: 1,
+					color: '#808080'
+				}]
+			};
+			var tooltip = {
+				formatter: function () {
+					return '<b>' + this.series.name + '</b><br/>' +
+						Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+						Highcharts.numberFormat(this.y, 2);
+				}
+			};
+			var plotOptions = {
+				area: {
+					pointStart: 1940,
+					marker: {
+						enabled: false,
+						symbol: 'circle',
+						radius: 2,
+						states: {
+							hover: {
+								enabled: true
+							}
+						}
+					}
+				}
+			};
+			var legend = {
+				enabled: false
+			};
+			var exporting = {
+				enabled: false
+			};
+			var series = [{
+				name: '电压值',
+				data: (function () {
+					// generate an array of random data
+					var data = [], time = (new Date()).getTime(), i;
+					for (i = -19; i <= 0; i += 1) {
+						data.push({
+							x: time + i * 1000,
+							y: Math.random()
+						});
+					}
+					return data;
+				}())
+			}];
+
+			var json = {};
+			json.chart = chart;
+			json.title = title;
+			json.tooltip = tooltip;
+			json.xAxis = xAxis;
+			json.yAxis = yAxis;
+			json.legend = legend;
+			json.exporting = exporting;
+			json.series = series;
+			json.plotOptions = plotOptions;
+
+
+			Highcharts.setOptions({
+				global: {
+					useUTC: false
+				}
+			});
+			$('#container').highcharts(json);
+
+		});
+	</script>
+
+
+
+	<script type="text/javascript">
+		var int = self.setInterval("detect_key()", 1000);
+		function detect_key() {
+			postask_key();
+		}
+
+		var int = self.setInterval("xadc()", 1600);
+		function xadc() {
+			postask_xadc();
+		}
+
+
+		function postask_xadc() {
+			var xmlhttp;
+			if (window.XMLHttpRequest) {
+				//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+				xmlhttp = new XMLHttpRequest();
+			}
+			else {
+				// IE6, IE5 浏览器执行代码
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function () {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+					console.log(xmlhttp.responseText);
+					var ret = String(xmlhttp.responseText);
+					// ret="322&855";  温度&电压
+					var n = ret.indexOf("&");
+					if (n > 0) {
+						document.getElementById("temperature").innerHTML = ret.substring(0, n);
+						document.getElementById("vcc").innerHTML = ret.substring(n + 1);
+					}
+				}
+			}
+
+			xmlhttp.open("POST", "/xadc.cgi", true);
+
+			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xmlhttp.send("xadc");
+			xmlhttp.send();
+		}
+
+
+	</script>
+
+	<!-- <button onclick="int=window.clearInterval(int)">停止</button> -->
+
+	<script type="text/javascript">
+		document.getElementById("ps_led").onclick = function () {
+			if (this.className == "inner-on") {
+				this.style.left = -51 + "px";
+				this.childNodes[1].checked = false;
+				this.className = "inner-off";
+				console.log("在OFF的状态下");
+				postask_led("psled", "0");
+
+			} else {
+				this.style.left = 0;
+				this.childNodes[1].checked = true;
+				this.className = "inner-on";
+				console.log("在ON的状态下");
+				postask_led("psled", "1");
+			}
+		}
+
+		document.getElementById("pl_led").onclick = function () {
+			if (this.className == "inner-on") {
+				this.style.left = -51 + "px";
+				this.childNodes[1].checked = false;
+				this.className = "inner-off";
+				console.log("在OFF的状态下");
+				postask_led("plled", "0");
+			} else {
+				this.style.left = 0;
+				this.childNodes[1].checked = true;
+				this.className = "inner-on";
+				console.log("在ON的状态下");
+				postask_led("plled", "1");
+			}
+		}
+
+		// 按键检测
+		function detect() {
+			// alert("这是调用函数");
+			postask_key();
+		}
+
+	</script>
+
+
+
+
+
+
+
+	<script>
+		function postask_led(obj, state) {
+			var xmlhttp;
+			if (window.XMLHttpRequest) {
+				//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+				xmlhttp = new XMLHttpRequest();
+			}
+			else {
+				// IE6, IE5 浏览器执行代码
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function () {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+					console.log("xmlhttp.responseText:");
+					console.log(xmlhttp.responseText);
+				}
+			}
+			xmlhttp.open("POST", "/led.cgi", true);
+
+			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+			xmlhttp.send(obj + "&" + state);
+
+			xmlhttp.send();
+		}
+
+		function postask_key() {
+			var xmlhttp;
+			if (window.XMLHttpRequest) {
+				//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+				xmlhttp = new XMLHttpRequest();
+			}
+			else {
+				// IE6, IE5 浏览器执行代码
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			xmlhttp.onreadystatechange = function () {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+					// document.getElementById("myDiv").innerHTML = xmlhttp.responseText;
+					console.log(xmlhttp.responseText);
+
+					var ret = String(xmlhttp.responseText);
+					// ret="0&0";
+					// 返回值格式：1&1   ps&pl  1是按下
+					if (ret.charAt(0) == '1') {
+						document.getElementById("ps_key").style.left = -51 + "px";
+						document.getElementById("ps_key").childNodes[1].checked = false;
+						document.getElementById("ps_key").className = "inner-off";
+					}
+					else if (ret.charAt(0) == '0') {
+						document.getElementById("ps_key").style.left = 0;
+						document.getElementById("ps_key").childNodes[1].checked = true;
+						document.getElementById("ps_key").className = "inner-on";
+					}
+					else;
+
+					if (ret.charAt(2) == '1') {
+						document.getElementById("pl_key").style.left = -51 + "px";
+						document.getElementById("pl_key").childNodes[1].checked = false;
+						document.getElementById("pl_key").className = "inner-off";
+					}
+					else if (ret.charAt(2) == '0') {
+						document.getElementById("pl_key").style.left = 0;
+						document.getElementById("pl_key").childNodes[1].checked = true;
+						document.getElementById("pl_key").className = "inner-on";
+					}
+					else;
+
+
+				}
+			}
+
+			xmlhttp.open("POST", "/led.cgi", true);
+
+			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xmlhttp.send("key");
+			xmlhttp.send();
+		}
+
+	</script>
+
+	<!-- 鼠标点击特效 -->
+	<script src="https://blog-static.cnblogs.com/files/hunternet/cursor-effects.js"></script>
+	<!-- 鼠标点击特效end -->
+
+</body>
+
+</html>
